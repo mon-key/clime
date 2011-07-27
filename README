@@ -1,0 +1,70 @@
+# Common Lisp code for copying files with image mime-type across file system boundaries.
+
+# Overview
+
+Clime is intended more specifically, for moving image files from a locally
+mounted file system on the localhost to a remote file-system mounted via
+FUSE/sshfs on the local host (destinations directories which are locally mounted
+are valid potential targets as well).
+
+Potentially useful for transferring freshly edited locally stored images files
+to a remote machine (think web server image galleries).
+
+# Reatures
+
+- Targeted for use as a buildapp'd SBCL executable 
+- Configured for use from the command line with command-line-arguments 
+- Checks to ensure that both the source file-system and destination filesystem
+  exist and are actively mounted
+- Uses magicffi to ensure that only images matching specific mime-type will be transferred
+- Tries hard to be careful around orthogonal relationship of Common Lisp
+  pathnames and *Nix namestrings
+- Potentially portable with osicat (I am only developing for SBCL)
+ 
+# Requires
+
+- cl-ppcre
+:SEE [http://www.weitz.de/cl-ppcre/](http://www.weitz.de/cl-ppcre/)
+
+- cffi 
+:SEE [http://common-lisp.net/project/cffi/](http://common-lisp.net/project/cffi/)
+
+- magicffi
+:SEE [http://common-lisp.net/project/magicffi/](http://www.quicklisp.org/http://common-lisp.net/project/magicffi/)
+:SEE [https://github.com/dochang/magicffi](https://github.com/dochang/magicffi)
+:SEE [http://www.darwinsys.com/file/](http://www.darwinsys.com/file/)
+:SEE [http://en.wikipedia.org/wiki/Libmagic](http://en.wikipedia.org/wiki/Libmagic)
+  
+:NOTE magicffi needs access to libmagic headers
+
+On Fedora 15 these are distributed with the file-libs and file-devel packages.
+   yum install file-devel
+
+On Debian derived distributions these are in the libmagic-dev package
+   apt-get install libmagic-dev
+
+- osicat
+:SEE [http://common-lisp.net/project/osicat/](http://common-lisp.net/project/osicat/)
+
+- command-line-arguments
+:SEE [http://common-lisp.net/project/qitab/](http://common-lisp.net/project/qitab/)
+
+- buildapp
+:SEE [http://www.xach.com/lisp/buildapp/](http://www.xach.com/lisp/buildapp/)
+
+- Quicklisp
+:SEE [http://www.quicklisp.org/](http://www.quicklisp.org/)
+
+# Installation
+
+All of the above mentioned systems are installable with Quicklisp:
+
+   (quicklisp:quickload  (list "cl-ppcre" "cffi" "magicffi"
+                                "osicat" "command-line-arguments" "buildapp"))
+
+# Usage
+
+Some preliminary documentation is available.
+
+:SEE :FILE clime/clime-docs.lisp
+
