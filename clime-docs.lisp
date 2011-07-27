@@ -10,16 +10,14 @@
 #|
 
  (quicklisp:quickload "cl-ppcre")
-
  (quicklisp:quickload "cffi")
-
  (quicklisp:quickload "magicffi")
-
  (quicklisp:quickload "osicat")
-
  (quicklisp:quickload "command-line-arguments")
-
  (quicklisp:quickload "buildapp")
+
+ (quicklisp:quickload  (list "cl-ppcre" "cffi" "magicffi"
+                             "osicat" "command-line-arguments" "buildapp"))
 
 |#
 
@@ -28,26 +26,19 @@
 #|
 
  :SEE (URL `https://github.com/dochang/magicffi')
-
  :SEE (URL `http://swoolley.org/man.cgi/3/libmagic')
 
  :FILE /usr/share/misc
  :FILE /usr/share/mimelnk/magic
+ :NOTE magicffi needs access to libmagic headers
+  On Fedora 15 these are distributed with the file-libs and file-devel packages.
+      yum install file-devel
+
+  On Debian derived distributions these are in the libmagic-dev package
+     apt-get install libmagic-dev
 
  :SEE (URL `http://method-combination.net/lisp/files/mimeparse.lisp')
-
- (quicklisp:quickload  (list "cl-ppcre" "cffi" "magicffi"
-                             "osicat" "command-line-arguments" "buildapp"))
                             
-
- (quicklisp:quickload "magicffi")
-
- (quicklisp:quickload "osicat")
-
- (quicklisp:quickload "command-line-arguments")
-
- (quicklisp:quickload "buildapp")
-
 |#
 
 

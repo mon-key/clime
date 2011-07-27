@@ -2,24 +2,26 @@
 
 # Overview
 
-Clime is intended more specifically, for moving image files from a locally
-mounted file system on the localhost to a remote file-system mounted via
+Clime was developed for transferring freshly edited locally stored images files
+to a remote machine (think web server image galleries).
+
+Clime uses magicffi's FFI to libmagic when identifying a file images mime-type.
+
+Clime is intended for automated moving/copying of image files from a locally
+mounted file system on a localhost to a remote file-system mounted via
 FUSE/sshfs on the local host (destinations directories which are locally mounted
 are valid potential targets as well).
 
-Potentially useful for transferring freshly edited locally stored images files
-to a remote machine (think web server image galleries).
-
-# Reatures
+# Features
 
 - Targeted for use as a buildapp'd SBCL executable 
 - Configured for use from the command line with command-line-arguments 
 - Checks to ensure that both the source file-system and destination filesystem
-  exist and are actively mounted
+  exist and are actively mounted as if by *Nix command `mountpoint`
 - Uses magicffi to ensure that only images matching specific mime-type will be transferred
 - Tries hard to be careful around orthogonal relationship of Common Lisp
   pathnames and *Nix namestrings
-- Potentially portable with osicat (I am only developing for SBCL)
+- Potentially portable with osicat (Though I am only developing for SBCL)
  
 # Requires
 
@@ -61,6 +63,73 @@ All of the above mentioned systems are installable with Quicklisp:
 
    (quicklisp:quickload  (list "cl-ppcre" "cffi" "magicffi"
                                 "osicat" "command-line-arguments" "buildapp"))
+
+# Discussion
+
+Clime is potentially useful when you want to move all of the images located beneath a
+particular local directory tree:
+
+   /mnt/local-machine/foo/blarg/quux/*/your-local-image.img
+
+To a remote directory tree:
+
+   /mnt/remote-machine/foo/blammo/*/the-served-image.img
+
+Where only the paths beneath '*/' share the same directory structure.
+
+Inside the local directory tree the following situations may be encountered:
+
+ - we may find directories with identical names in separate branches
+ - we may find nested directories with a subdir having an identical name as a parent branch
+ - we may find directories with identical names as an image file
+ - we may find nested directories with a subdir having an identical name as an image file
+ - we may find image files with identical names and extensions
+ - we may find image files with identical names and differing extension
+ - we may image files wich are duplicated (e.g. img-B is a byte-for-byte duplicate of img-A)
+ - we may find image files wich are identical in name and extension but one is in an archive. 
+ - we may find image files wich are identical in name with a non image file
+ - we may find image files and/or directories which symlink
+ - we may find image files and/or directories with names containing whitespace
+ - etc. etc. etc.
+
+In some of above situations we will want to select only certain images files for moving.
+In others, we will want to completely avoid moving _any_ of the files.
+ 
+Disambiguating the above situations is a multi-step operation requiring:
+
+ - successfully mapping a local directory tree
+ - identifying target directories
+ - gathering their contents
+ - identifying target image files
+ - filtering for the _right_ image file
+ - avoiding inspection of some types of large compressed image files
+ - successfully inspection of other types of compressed image files
+ - avoiding inadverdent traversal of symbolic-links
+ - avoiding broken symbolic-links
+ - handling of directory/file names with whitespace
+
+CL is more than capabable of handling most of the above requirements.
+It has fine and portable path-munging capabilities, and these are far more
+enjoyable to work with than the equivalent shell, *nix command, or C interface.
+
+However, CL is not particularly good at munging files in a scripted manner ala
+`xargs`. CL is not particularly good at incorporating the OS's represention of
+symlink'd paths with its own. More importantly, it lacks the ability to
+interrogate the system resources around a files mime-type in a scripted
+manner. The latter is something that practically all *Nix systems provide and
+which most tools derived of the "curly brace" are capable of relying on when
+automating complex file munging tasks. (There's a reason `file` has been around
+since the 1970s!)
+
+Likewise, where CL does offer these capabilities, accessing them often requires
+that we fire up our image for an interactive session in an environment like
+Emacs... when what we really want to do is:
+
+ shell> clime --local-mount "/mnt/local-machine/"   --local-sub "foo/blarg/quux" \
+              --remote-mount "/mnt/remote-machine/" --remote-sub "foo/blammo"
+
+And have CL find all the applicable image files under local mount's "quux" and
+move them to some relative path on remote mount under "blammo"
 
 # Usage
 
