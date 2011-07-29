@@ -25,6 +25,12 @@ CLIME_DATE := $(shell date +%y-%m-%d)
 CLIMEDIR := $(shell pwd)
 CLIME_D_P_D = $(CLIMEDIR)/
 
+# 
+# CLIME_TRANS = $(HOME)/.cache/common-lisp/clime-build/
+# ASDF_OUTPUT_TRANSLATIONS = $(CLIME_TRANS)
+#	mkdir $(CLIME_TRANS)
+#	rm -r -f $(CLIME_TRANS)
+
 
 manifest:
 	sbcl --disable-debugger --no-userinit --no-sysinit \
@@ -57,4 +63,8 @@ mostly-clean:
 
 clean:
 	rm -f clime asdf-manifest.txt clime-buildapp-log
+
+
+
+
 

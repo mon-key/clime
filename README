@@ -159,7 +159,7 @@ write permmissions to /usr/local/bin you can give an alternative path:
 
 To see a list of Clime's command line flags:
 
- shell> clime --help
+ shell> ./clime --help
 
 # Discussion
 
@@ -224,7 +224,8 @@ that we fire up our image for an interactive session in an environment like
 Emacs... when what we really want to do is:
 
  shell> clime --local-mount "/mnt/local-machine/"   --local-sub "foo/blarg/quux" \
-              --remote-mount "/mnt/remote-machine/" --remote-sub "foo/blammo"
+              --remote-mount "/mnt/remote-machine/" --remote-sub "foo/blammo" \
+              --valid-mime "tiff,tif,bmp"
 
 And have CL find all the applicable image files under local mount's "quux" and
 move them to some relative path on remote mount under "blammo"
