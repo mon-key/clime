@@ -5,11 +5,11 @@
 Clime was developed for transferring freshly edited locally stored images files
 to a remote machine (think web server image galleries).
 
-Clime uses magicffi's FFI to libmagic when identifying a file images mime-type.
+Clime uses magicffi's FFI to libmagic when identifying a file image's mime-type.
 
 Clime is intended for automated moving/copying of image files from a locally
-mounted file system on a localhost to a remote file-system mounted via
-FUSE/sshfs on the local host (destinations directories which are locally mounted
+mounted file system on a localhost to a remote host's file-system mounted via
+FUSE/sshfs on the localhost (destinations directories which are locally mounted
 are valid potential targets as well).
 
 # Features
@@ -26,16 +26,16 @@ are valid potential targets as well).
 # Requires
 
 - cl-ppcre
-:SEE [http://www.weitz.de/cl-ppcre/](http://www.weitz.de/cl-ppcre/)
+:SEE [http://www.weitz.de/cl-ppcre/] (http://www.weitz.de/cl-ppcre/)
 
 - cffi 
-:SEE [http://common-lisp.net/project/cffi/](http://common-lisp.net/project/cffi/)
+:SEE [http://common-lisp.net/project/cffi/] (http://common-lisp.net/project/cffi/)
 
 - magicffi
-:SEE [http://common-lisp.net/project/magicffi/](http://www.quicklisp.org/http://common-lisp.net/project/magicffi/)
-:SEE [https://github.com/dochang/magicffi](https://github.com/dochang/magicffi)
-:SEE [http://www.darwinsys.com/file/](http://www.darwinsys.com/file/)
-:SEE [http://en.wikipedia.org/wiki/Libmagic](http://en.wikipedia.org/wiki/Libmagic)
+:SEE [http://common-lisp.net/project/magicffi/] (http://www.quicklisp.org/http://common-lisp.net/project/magicffi/)
+:SEE [https://github.com/dochang/magicffi] (https://github.com/dochang/magicffi)
+:SEE [http://www.darwinsys.com/file/] (http://www.darwinsys.com/file/)
+:SEE [http://en.wikipedia.org/wiki/Libmagic] (http://en.wikipedia.org/wiki/Libmagic)
   
 :NOTE magicffi needs access to libmagic headers
 
@@ -46,16 +46,16 @@ On Debian derived distributions these are in the libmagic-dev package
    apt-get install libmagic-dev
 
 - osicat
-:SEE [http://common-lisp.net/project/osicat/](http://common-lisp.net/project/osicat/)
+:SEE [http://common-lisp.net/project/osicat/] (http://common-lisp.net/project/osicat/)
 
 - command-line-arguments
-:SEE [http://common-lisp.net/project/qitab/](http://common-lisp.net/project/qitab/)
+:SEE [http://common-lisp.net/project/qitab/] (http://common-lisp.net/project/qitab/)
 
 - buildapp
-:SEE [http://www.xach.com/lisp/buildapp/](http://www.xach.com/lisp/buildapp/)
+:SEE [http://www.xach.com/lisp/buildapp/] (http://www.xach.com/lisp/buildapp/)
 
 - Quicklisp
-:SEE [http://www.quicklisp.org/](http://www.quicklisp.org/)
+:SEE [http://www.quicklisp.org/] (http://www.quicklisp.org/)
 
 # Installation
 
@@ -64,10 +64,108 @@ All of the above mentioned systems are installable with Quicklisp:
    (quicklisp:quickload  (list "cl-ppcre" "cffi" "magicffi"
                                 "osicat" "command-line-arguments" "buildapp"))
 
+Make sure that the buildapp binary is installed and in your path.
+
+ shell> cd ~/quicklisp/dists/quicklisp/software/buildapp-1.3 
+ shell> make
+ shell> make install
+
+For addtional buildapp configuration instructions:
+:SEE [http://www.xach.com/lisp/buildapp/](http://www.xach.com/lisp/buildapp/)
+
+Once buildapp is configured change to the directory where you installed clime:
+
+ shell> cd /some/path/to/clime
+
+Run make to generate a manifest file.
+This will write a file to pwd as ./asdf-manifest.txt
+
+ shell> make manifest
+
+The manifest should be contained of a list of pathnames to the most recently
+installed asdf systems from quicklisp:
+
+ shell> cat asdf-manifest.txt
+
+Take a moment to ensure that pathnames for the following systems are present:
+
+ cl-ppcre, cffi, magicffi, osicat, command-line-arguments
+
+If so, proceed to building an exectuable clime:
+
+ shell> make clime
+
+If you should get errors during the build like the following:
+
+ Fatal SIMPLE-ERROR:
+   The loaded code expects an incompatible layout for class SB-PRETTY:PRETTY-STREAM.
+
+The above happened for me w/ SBCL 1.0.47.1.
+I was able to rectify it by clearing out my fasl cache.
+On a linux box you can try removing the fasls from the default path with something like this:
+
+ shell> rm -r -f ~/.cache/common-lisp/sbcl-1.0.47.1-linux-x86/home/_YOUR-DIR_/quicklisp/dists/quicklisp/software/
+
+By default the Clime build is logged to ./clime-buildapp-log
+If you encounter other errors check there.
+
+If you did get errors you can try make'ing again:
+
+ shell> make mostly-clean
+ shell> make clime
+
+If everything goes as planned you will now have a clime executable beneath pwd ./clime
+
+ shell> ls -alh ./ | grep .*clime$
+
+You can give clime a whirl with some valid paths:
+
+ shell> ./clime --local-mount "/mnt/LCL-MNT-POINT/" --local-sub "some/local-sub/dir" \
+                --remote-mount "/mnt/RMT-MNT-POINT/" --remote-sub "some/remote-sub"
+         
+    with command arg `local-mount' setting variable *LOCAL-MOUNT-NAMESTRING* 
+      now bound to: "/mnt/LCL-MNT-POINT/"
+    with command arg `remote-mount' setting variable *REMOTE-MOUNT-NAMESTRING* 
+      now bound to: "/mnt/RMT-MNT-POINT/"
+    with command arg `local-sub' setting variable *LOCAL-DIRECTORY-SUB-COMPONENTS* 
+      now bound to: ("some" "local-sub" "dir")
+    with command arg `remote-sub' setting variable *REMOTE-DIRECTORY-SUB-COMPONENTS* 
+      now bound to: ("some" "remote-sub") 
+
+As presently distributed Clime is verbose :)
+The output above is letting you which globals have been bound to what.
+If you give Clime a bogus argument it will error verbosely and bail:
+
+ shell> ./clime --local-mount "/mnt/LCL-MNT-POINT/" --local-sub "some/local-sub/dir" \
+                --remote-mount "/mnt/NOT-A-RMT-MNT-POINT/" --remote-sub "some/remote-sub"
+
+   Arg PATHNAME-OR-NAMESTRING not a directory, got: /mnt/NOT-A-RMT-MNT-POINT/
+   :FUNCTION `verify-mount-namestrings' -- exiting now
+
+There are a few points of failure during Climes initialization phase and when
+one occurs Clime should report it with something meaningful.
+
+If you elect to install Clime to a more permanent location you can do so with:
+
+ shell> make install
+
+By default clime is installed to /usr/local/bin 
+The usual make usage is applicable here.
+IOW, if you need to be root when installing then do so.
+If you wish to install to some other location and/or your user doesn't have
+write permmissions to /usr/local/bin you can give an alternative path:
+
+ shell> make DESTDIR=/your/alter/dest/dir install
+
+To see a list of Clime's command line flags:
+
+ shell> clime --help
+
 # Discussion
 
-Clime is potentially useful when you want to move all of the images located beneath a
-particular local directory tree:
+Clime is being developed to accomodate situations where you want to move (in an
+automated manner) all of the images located beneath a particular local directory
+tree:
 
    /mnt/local-machine/foo/blarg/quux/*/your-local-image.img
 
@@ -85,9 +183,9 @@ Inside the local directory tree the following situations may be encountered:
  - we may find nested directories with a subdir having an identical name as an image file
  - we may find image files with identical names and extensions
  - we may find image files with identical names and differing extension
- - we may image files wich are duplicated (e.g. img-B is a byte-for-byte duplicate of img-A)
- - we may find image files wich are identical in name and extension but one is in an archive. 
- - we may find image files wich are identical in name with a non image file
+ - we may image files which are duplicated (e.g. img-B is a byte-for-byte duplicate of img-A)
+ - we may find image files which are identical in name and extension but one is in an archive. 
+ - we may find image files which are identical in name with a non image file
  - we may find image files and/or directories which symlink
  - we may find image files and/or directories with names containing whitespace
  - etc. etc. etc.
@@ -103,7 +201,7 @@ Disambiguating the above situations is a multi-step operation requiring:
  - identifying target image files
  - filtering for the _right_ image file
  - avoiding inspection of some types of large compressed image files
- - successfully inspection of other types of compressed image files
+ - successfully inspecting of other types of compressed image files
  - avoiding inadverdent traversal of symbolic-links
  - avoiding broken symbolic-links
  - handling of directory/file names with whitespace
@@ -132,6 +230,8 @@ And have CL find all the applicable image files under local mount's "quux" and
 move them to some relative path on remote mount under "blammo"
 
 # Usage
+
+Clime is a work in progress.
 
 Some preliminary documentation is available.
 

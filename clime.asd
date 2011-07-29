@@ -26,7 +26,7 @@
                :osicat
                :magicffi
                :command-line-arguments
-               :buildapp)
+               );:buildapp)
   :serial t    
   :components
   ((:file "package"                  )

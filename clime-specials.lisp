@@ -19,6 +19,7 @@
 
 ;; (command-line-arguments:show-option-help *CLI-SPECIFICATION*)
 (defparameter *CLI-SPECIFICATION*
+  ;; (setq *CLI-SPECIFICATION*
   `(("local-mount"
      :type string 
      :documentation #.(format nil "Namestring identifying local base directory which is a mountpoint. ~
@@ -45,10 +46,17 @@
                                     Leading and trealing occurences are elided, ~
                                     such that a string with the basic form: \"some/remote/sub-dir\" ~
                                     will be transformed to the list \(\"some\" \"remote\" \"sub-dir\"\).~%"))
+    
     ("arg-file"
      :type string
-     :documentation #.(format nil "Namestring identifying a pathname which contains file and/or directory names ~
-                                   located on the local-host which should be transferred to the remote host.~%"))))
+     :documentation #.(format nil "<<<<CURRENTLY-NOT-IMPLEMENTED>>>>~%
+                                   Namestring identifying a pathname which contains file and/or directory names ~
+                                   located on the local-host which should be transferred to the remote host.~%"))
+    ("help"
+     ;; :type nil
+     :documentation 
+     #.(format nil "Return this help list~%"))))
+  
 
 (defvar *CLI-TO-VARIABLE-SPEC*
   ;; <KEYWORD> <REQUIRED> <ACTION> <SPECIAL-VAR>
@@ -57,7 +65,8 @@
   '((:LOCAL-MOUNT  t set-base-mount-parameter-namestring             *LOCAL-MOUNT-NAMESTRING*)
     (:REMOTE-MOUNT t set-base-mount-parameter-namestring             *REMOTE-MOUNT-NAMESTRING*)
     (:LOCAL-SUB  nil set-base-mount-parameter-pathname-sub-component *LOCAL-DIRECTORY-SUB-COMPONENTS*)  
-    (:REMOTE-SUB nil set-base-mount-parameter-pathname-sub-component *REMOTE-DIRECTORY-SUB-COMPONENTS*) 
+    (:REMOTE-SUB nil set-base-mount-parameter-pathname-sub-component *REMOTE-DIRECTORY-SUB-COMPONENTS*)
+    ;; (:HELP       nil show-clime-help)
     ;; currently unimplemented
     ;; (:ARG-FILE nil set-arg-file-parameter                         *ARG-FILE-ARGUMENTS*)
     ))

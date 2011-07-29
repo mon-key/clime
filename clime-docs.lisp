@@ -2,57 +2,14 @@
 ;;; :FILE clime/clime-docs.lisp
 ;;; ==============================
 
+;; "You know how to lisp, don't you? You just put your lips together and... blow"
+;;    -- Lauren Bacall 'To Lisp and Lisp Not'
+
 
 ;;; ==============================
 (in-package #:clime)
 ;; *package*
 
-#|
-
- (quicklisp:quickload "cl-ppcre")
- (quicklisp:quickload "cffi")
- (quicklisp:quickload "magicffi")
- (quicklisp:quickload "osicat")
- (quicklisp:quickload "command-line-arguments")
- (quicklisp:quickload "buildapp")
-
- (quicklisp:quickload  (list "cl-ppcre" "cffi" "magicffi"
-                             "osicat" "command-line-arguments" "buildapp"))
-
-|#
-
-
-
-#|
-
- :SEE (URL `https://github.com/dochang/magicffi')
- :SEE (URL `http://swoolley.org/man.cgi/3/libmagic')
-
- :FILE /usr/share/misc
- :FILE /usr/share/mimelnk/magic
- :NOTE magicffi needs access to libmagic headers
-  On Fedora 15 these are distributed with the file-libs and file-devel packages.
-      yum install file-devel
-
-  On Debian derived distributions these are in the libmagic-dev package
-     apt-get install libmagic-dev
-
- :SEE (URL `http://method-combination.net/lisp/files/mimeparse.lisp')
-                            
-|#
-
-
-#|
-
- buildapp --output clime
- --require sb-posix
- --require sb-ext
- --load-system cl-ppcre
- --load-system cffi
- --load-system magicffi
- --load-system osicat
-
-|#
 
     
 #|
@@ -74,9 +31,14 @@
   (:REMOTE-MOUNT t set-base-mount-parameter-namestring         *REMOTE-MOUNT-NAMESTRING*)
   (:LOCAL-SUB  nil set-base-mount-parameter-pathname-component *LOCAL-DIRECTORY-SUB-COMPONENTS*)
   (:REMOTE-SUB nil set-base-mount-parameter-pathname-component *REMOTE-DIRECTORY-SUB-COMPONENTS*))
- 
+
+
  The initial parsing and binding of command line arguments:
 
+ Check if we found any help args in sb-ext:*posix-argv*
+  If so, print them and bail
+ 
+ Else proceed w/ parsing the command line args:
  (set-parameter-spec-with-command-arguments (get-command-arguments) *CLI-TO-VARIABLE-SPEC*)
 
   1) for all args in (get-command-arguments)
@@ -195,7 +157,7 @@
 
 
 #|
- 
+  
  failed-function-report-and-bail
   - sb-ext:quit
  
@@ -206,9 +168,22 @@
   - sb-posix:syslog 
   - sb-posix:closelog
  
+ clime-main
+  - set-parameter-spec-with-command-arguments
+  - get-command-arguments
+
  get-command-arguments
+  - check-clime-help-argument
   - command-line-arguments:get-command-line-arguments 
   - command-line-arguments:process-command-line-options
+
+ check-clime-help-argument
+  - sb-ext:*posix-argv*
+  - show-clime-help
+  - sb-ext:quit
+
+ show-clime-help
+ - command-line-arguments:show-option-help
  
  verify-local-mount-command-argument
   - failed-function-report-and-bail
@@ -340,6 +315,19 @@
 ;; :EXAMPLE
 ;; (failed-function-report-and-bail 'failed-function-report-and-bail :stream nil)
 ;; (failed-function-report-and-bail "failed-function-report-and-bail" :stream nil)
+
+;;; ==============================
+;; check-clime-help-argument
+;; If we find something in value of sb-ext:*posix-argv* that looks like a
+;; request for help show help and exit when *IS-BUILDAPP-P*.
+;;
+;; Things that look like a request for help include:
+;;  "-h"  "help" "-help" "--help" "usage" "-usage" "--usage"
+
+;;; ==============================
+;; show-clime-help
+;; Return a description of valid Clime arguments.
+;;
 
 ;;; ==============================
 ;; mountpoint-p
@@ -616,7 +604,7 @@
 ;; :NOTE Nikon images with file extension "<FILE>.nef" are currently returning "image/tiff".
 ;; The first four characters of these files are (in hex):
 ;; x4d x4d x00 x2a 
-;; MM * 
+;; MM^@*
 ;; which seems to cause a spurious indication of a tiff Big Endian file.
 ;; See mime-type definition for tiff format in :FILE /usr/share/mimelnk/magic 
 ;; 1      2 3          4

@@ -43,6 +43,9 @@
              ;;
            ;; clime-initialize.lisp
              ;;
+             #:clime-main
+             #:check-clime-help-argument
+             #:show-clime-help
              #:get-command-arguments                         ;; command-line-arguments:get-command-line-arguments  command-line-arguments:process-command-line-options
              #:verify-local-mount-command-argument
              #:set-parameter-spec-with-command-arguments

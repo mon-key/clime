@@ -75,7 +75,7 @@
                            (or (null maybe-null-or-wild)
                                (wild-pathname-p maybe-null-or-wild))) env-split))
       (when env-split
-        (map 'list #'mon:pathname-as-directory env-split)))))
+        (map 'list #'osicat:pathname-as-directory env-split)))))
 
 ;; :NOTE The implementation equivalences are courtesy :FILE pergamum/feet-of-clay.lisp
 ;; :SEE (URL `git://git.feelingofgreen.ru/pergamum') 

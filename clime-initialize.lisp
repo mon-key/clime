@@ -12,14 +12,27 @@
 (in-package #:clime)
 ;; *package*
 
-
-(defun get-command-arguments ()
-  (command-line-arguments:process-command-line-options 
+(defun get-command-arguments (&key (stream *standard-output*))
+  (check-clime-help-argument :stream stream)
+  (command-line-arguments:process-command-line-options
    *CLI-SPECIFICATION* 
    (command-line-arguments:get-command-line-arguments)))
 
+(defun check-clime-help-argument (&key (stream *standard-output*))
+  (unless (zerop 
+           (list-length 
+            (intersection '("-h"  "help" "-help" "--help" "usage" "-usage" "--usage") ;; "?" "-?" 
+                          sb-ext:*posix-argv* :test #'string-equal)))
+    (unwind-protect
+         (show-clime-help :stream stream)
+      (when *IS-BUILDAPP-P* 
+        (sb-ext:quit :unix-status 0)))))
+
+(defun show-clime-help (&key (stream *standard-output*))
+  (command-line-arguments:show-option-help *CLI-SPECIFICATION* :stream stream))
+
 (defun verify-local-mount-command-argument (keyword key-val-arglist &key (required nil) 
-                                            (stream *standard-output*))
+                                                                         (stream *standard-output*))
   (declare (boolean required))
   (let ((get-val (getf key-val-arglist keyword 'not-present)))
     (when (eq get-val 'not-present)
@@ -280,6 +293,17 @@
          for val = (symbol-value sym)
          collect (list str val) into report
          finally (return report))))
+
+;;; ==============================
+(defun clime-main (argv &key (stream *standard-output*))
+  (declare (ignore argv))
+  ;; No. Do this from buildapp with --eval (setq clime:*IS-BUILDAPP-P* t)
+  ;; (setq clime:*IS-BUILDAPP-P* t) 
+  (set-parameter-spec-with-command-arguments (get-command-arguments :stream stream) 
+                                             *CLI-TO-VARIABLE-SPEC* 
+                                             :stream *standard-output*)
+  ;; ( ... do more clime stuff here ... )
+  )
 
 
 ;;; ==============================
