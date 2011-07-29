@@ -31,22 +31,17 @@
 (defun show-clime-help (&key (stream *standard-output*))
   (command-line-arguments:show-option-help *CLI-SPECIFICATION* :stream stream))
 
-(defun verify-local-mount-command-argument (keyword key-val-arglist &key (required nil) 
-                                                                         (stream *standard-output*))
-  (declare (boolean required))
-  (let ((get-val (getf key-val-arglist keyword 'not-present)))
-    (when (eq get-val 'not-present)
-      (format stream "command line argument ~(`~A'~) not found~%" keyword)
-      (or 
-       (failed-function-report-and-bail "verify-local-mount-command-argument" :stream stream :exit-status 1)
-       (return-from verify-local-mount-command-argument nil)))
-    (if get-val
-        get-val
-        (when required
-          (format stream "Required command line argument ~(~A~) not found or no value~%" keyword)
-          (or 
-           (failed-function-report-and-bail "verify-local-mount-command-argument" :stream stream :exit-status 1)
-           (return-from verify-local-mount-command-argument nil))))))
+(defun set-parameter-report (special-param &key command-key setting-fun (stream  *standard-output*))
+  ;; (set-parameter-report '*local-directory-component* :setting-fun "SET-PARAMETER-REPORT")
+  ;; (set-parameter-report '*local-directory-component* :command-key :REMOTE-MOUNT)
+  (declare (special special-param)
+           ((or symbol string) command-key))
+  (cond (command-key
+         (format stream "~%with command arg ~(`~A'~) setting variable ~A ~%~T now bound to: ~S~%" 
+                 (string command-key) special-param (symbol-value special-param)))
+        (setting-fun
+         (format stream "~%:FUNCTION ~(`~A'~) setting variable ~A ~%~T now bound to: ~S~%" 
+                 (string setting-fun) special-param (symbol-value special-param)))))
 
 (defun mountpoint-p (putuative-mountpoint &key (stream *standard-output*))
   (declare (string putuative-mountpoint))
@@ -72,10 +67,9 @@
          (native-kind (and make-native (sb-impl::native-file-kind make-native))))
     (if (eq native-kind :directory)
         (progn 
-          ;; (setf make-native (namestring (cl-fad:pathname-as-directory make-native)))
           (setf make-native (namestring (osicat:pathname-as-directory  make-native)))
-          ;; Don't allow top level directories, e.g. "/"
-          (if (> (length make-native) 1) 
+          ;; To big a pain in the ass to allow root directory and wrong to do so anyways.
+          (if (> (length make-native) 1)
               (mountpoint-p make-native :stream stream)
               (progn 
                 (format stream  "~%Arg PATHNAME-OR-NAMESTRING must have length greather than 1~%got: ~A" pathname-or-namestring)
@@ -96,8 +90,15 @@
     (or (failed-function-report-and-bail "set-base-mount-parameter-namestring" :stream stream :exit-status 1)
         (return-from set-base-mount-parameter-namestring nil)))
   (let ((mount-string (verify-mount-namestrings pathname-or-namestring)))
-    (and mount-string (set special-param mount-string))))
-
+    (when mount-string 
+      (values
+       (set special-param mount-string)
+       (case special-param ;; '*REMOTE-MOUNT-NAMESTRING* ;; '*LOCAL-MOUNT-NAMESTRING*
+         (*local-mount-namestring*  
+          (set-base-mount-parameter-pathname-component '*LOCAL-DIRECTORY-COMPONENT*  '*LOCAL-MOUNT-NAMESTRING*))
+         (*remote-mount-namestring* 
+          (set-base-mount-parameter-pathname-component '*REMOTE-DIRECTORY-COMPONENT* '*REMOTE-MOUNT-NAMESTRING*)))))))
+                      
 (defun parse-mountpoint-directory-components (mountpoint-namestring)
   (declare (string mountpoint-namestring))
   (pathname-directory (sb-ext:parse-native-namestring mountpoint-namestring)))
@@ -112,13 +113,53 @@
                                 (stringp bound-and-true)
                                 bound-and-true)))
     (unless bound-and-string
-      (format stream "~%Arg BASE-MOUNT-PARAM either not cl:boundp or its cl:symbol-value not cl:strinp, got: ~A" base-mount-param)
+      (format stream "~%Arg BASE-MOUNT-PARAM either not cl:boundp or its cl:symbol-value not cl:stringp, got: ~A" base-mount-param)
       (or (failed-function-report-and-bail "set-base-mount-parameter-pathname-component" :stream stream :exit-status 1)
           (return-from set-base-mount-parameter-pathname-component nil)))
-    (set base-component-param (parse-mountpoint-directory-components bound-and-string))))
+    (prog1
+        (set base-component-param (parse-mountpoint-directory-components bound-and-string))
+      (set-parameter-report base-component-param
+                            :setting-fun "set-base-mount-parameter-pathname-component"
+                            :stream stream))))
+
+(let ((cli-mime-filter-whitespace-scanner (cl-ppcre:create-scanner  "[,\\s]")))
+  (defun filter-valid-mime-types-command-args (if-arg)
+    (declare ((or string null) if-arg)
+             (optimize (speed 3)))
+    (when if-arg
+      (delete-duplicates 
+       (delete-if #'(lambda (chk-empty) (string= chk-empty ""))
+                  (cl-ppcre:split (the function cli-mime-filter-whitespace-scanner)
+                                  if-arg :sharedp t))
+       :test #'string=))))     
+
+(defun verify-valid-mime-types-command-args (if-arg-ensured &key (stream *standard-output*))
+  (if (and if-arg-ensured (stringp if-arg-ensured))
+      (let ((chk-if (copy-seq (the string if-arg-ensured)))
+            (chk-if-arg-ensured (filter-valid-mime-types-command-args if-arg-ensured)))
+        (declare ((or null list) chk-if-arg-ensured))
+        (if chk-if-arg-ensured 
+            chk-if-arg-ensured
+            (progn
+              (format stream "~%Arg --valid-mime was passed from command line~%~T~
+                             does not evaluate to valid value for variable *FILE-VALID-IMAGE-MIME-TYPES*.~%~T~
+                             got: ~S~%~T~
+                             evaluated-to: ~S~%"
+                      chk-if chk-if-arg-ensured)
+              (or (failed-function-report-and-bail "verify-valid-mime-types-command-args" :stream stream :exit-status 1)
+                  (return-from verify-valid-mime-types-command-args nil)))))
+      *FILE-VALID-IMAGE-MIME-TYPES*))
+
+(defun set-valid-mime-types-from-command-args (special-param valid-mime-string &key (stream *standard-output*))
+  ;; (set-valid-mime-types-from-command-args '*FILE-VALID-IMAGE-MIME-TYPES* "tiff,tif,bmp")
+  ;;(declare (special special-param))
+  (let ((verify-split (verify-valid-mime-types-command-args valid-mime-string :stream stream)))
+    (set special-param verify-split)))
 
 (defun split-subdir-paths (subdir-path-string)
-  (remove-if #'(lambda (x) (zerop (length x))) (cl-ppcre:split "/" subdir-path-string )))
+  (remove-if #'(lambda (sub-path-str)
+                 (zerop (length sub-path-str)))
+             (cl-ppcre:split "/" subdir-path-string )))
 
 (defun set-base-mount-parameter-pathname-sub-component (special-sub-comp-param subdir-path-string)
   ;; (set-base-mount-parameter-pathname-sub-component '*LOCAL-DIRECTORY-SUB-COMPONENTS* "some/sub/dir")
@@ -218,7 +259,11 @@
                                                                :stream stream))
          (namestring-scanner (and chk-namestring (cl-ppcre:create-scanner chk-namestring))))
     (if namestring-scanner
-        (set local-directory-base-regexp-param namestring-scanner)
+        (prog1
+            (set local-directory-base-regexp-param namestring-scanner)
+          (set-parameter-report local-directory-base-regexp-param
+                                :setting-fun "set-local-directory-base-regexp"
+                                :stream stream))
         (progn
           (format stream "failed to set variable ~A~%~T~
                           with arg LOCAL-DIRECTORY-COMPONENT-PARAM-FOR-REGEXP, got: ~A~%~T~
@@ -242,7 +287,11 @@
                                                           :stream stream)))
     ;; This is mostly redundant we should have already errored in `verify-directory-base-for-regexp'
     (if chk-namestring
-        (set remote-directory-base-namestring-param chk-namestring)
+        (prog1
+            (set remote-directory-base-namestring-param chk-namestring)
+          (set-parameter-report remote-directory-base-namestring-param
+                                :setting-fun "set-remote-directory-base-namestring"
+                                :stream stream))
         (progn
           (format stream "failed to set variable ~A~%~T~
                           with arg REMOTE-DIRECTORY-COMPONENT-PARAM, got: ~A~%~T~
@@ -260,20 +309,42 @@
   (set-local-directory-base-regexp      loc-dir-base-re-pram  loc-dir-cmpt-re-param loc-dir-sub-re-param :stream stream)
   (set-remote-directory-base-namestring rmt-dir-base-nm-param rmt-dir-cmpt-param    rmt-dir-sub-param    :stream stream))
 
+(defun verify-local-mount-command-argument (keyword key-val-arglist &key (required nil) 
+                                                                         (stream *standard-output*))
+  (declare (boolean required))
+  (let ((get-val (getf key-val-arglist keyword 'not-present)))
+    (when (eq get-val 'not-present)
+      (format stream "command line argument ~(`~A'~) not found~%" keyword)
+      (or 
+       (failed-function-report-and-bail "verify-local-mount-command-argument" :stream stream :exit-status 1)
+       (return-from verify-local-mount-command-argument nil)))
+    (if get-val
+        get-val
+        (when required
+          (format stream "Required command line argument ~(~A~) not found or no value~%" keyword)
+          (or 
+           (failed-function-report-and-bail "verify-local-mount-command-argument" :stream stream :exit-status 1)
+           (return-from verify-local-mount-command-argument nil))))))
+
 (defun set-parameter-spec-with-command-arguments (command-arguments parameter-spec &key (stream *standard-output*))
+  ;; Parameter spec is as per *CLI-TO-VARIABLE-SPEC* --  a list of list each element of the form:
+  ;; <KEYWORD> <REQUIRED> <ACTION> <SPECIAL-VAR>
   (loop 
-     with arglist = command-arguments
-     for (key req action param) in parameter-spec
+     ;;  arglist is the output of (get-command-arguments) -- a list of key/value pairs 
+     with arglist = command-arguments 
+     for (key req action param) in parameter-spec 
      for get-arg = (verify-local-mount-command-argument key arglist :required req :stream stream)
      do (funcall action param get-arg)
-     (format stream "with command arg ~(`~A'~) setting variable ~A ~%~T now bound to: ~S~%" 
-             (string key) param (symbol-value param)))
+     ;; (format stream "with command arg ~(`~A'~) setting variable ~A ~%~T now bound to: ~S~%" 
+     ;;       (string key) param (symbol-value param))
+     (set-parameter-report param :command-key key :stream stream))
+  ;; :NOTE These should already have been set in `clime:set-base-mount-parameter-namestring'
+  (unless *LOCAL-DIRECTORY-COMPONENT*
+    (set-base-mount-parameter-pathname-component '*LOCAL-DIRECTORY-COMPONENT*  '*LOCAL-MOUNT-NAMESTRING*  :stream stream))
+  (unless *REMOTE-DIRECTORY-COMPONENT*
+    (set-base-mount-parameter-pathname-component '*REMOTE-DIRECTORY-COMPONENT* '*REMOTE-MOUNT-NAMESTRING* :stream stream))
 
-  (set-base-mount-parameter-pathname-component '*LOCAL-DIRECTORY-COMPONENT*  '*LOCAL-MOUNT-NAMESTRING*  :stream stream)
-
-  (set-base-mount-parameter-pathname-component '*REMOTE-DIRECTORY-COMPONENT* '*REMOTE-MOUNT-NAMESTRING* :stream stream)
-
-  (set-local-directory-base-regexp-and-remote-namestring  
+  (set-local-directory-base-regexp-and-remote-namestring
    '*LOCAL-DIRECTORY-BASE-REGEXP*      '*LOCAL-DIRECTORY-COMPONENT*  '*LOCAL-DIRECTORY-SUB-COMPONENTS*
    '*REMOTE-DIRECTORY-BASE-NAMESTRING* '*REMOTE-DIRECTORY-COMPONENT* '*REMOTE-DIRECTORY-SUB-COMPONENTS*
    :stream stream)

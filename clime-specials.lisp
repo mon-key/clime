@@ -46,45 +46,66 @@
                                     Leading and trealing occurences are elided, ~
                                     such that a string with the basic form: \"some/remote/sub-dir\" ~
                                     will be transformed to the list \(\"some\" \"remote\" \"sub-dir\"\).~%"))
-    
+     ("valid-mime" 
+      :type string 
+      :documentation #.(format nil "<<<<CURRENTLY-NOT-IMPLEMENTED>>>> ~
+                                    A list of valid image mime types to identify.~
+                                    Default is value of `clime:*FILE-VALID-IMAGE-MIME-TYPES*'~%"))
     ("arg-file"
      :type string
-     :documentation #.(format nil "<<<<CURRENTLY-NOT-IMPLEMENTED>>>>~%
+     :documentation #.(format nil "<<<<CURRENTLY-NOT-IMPLEMENTED>>>> ~
                                    Namestring identifying a pathname which contains file and/or directory names ~
                                    located on the local-host which should be transferred to the remote host.~%"))
     ("help"
-     ;; :type nil
+     :type boolean
+     :optional t
+     ;; :initial-value nil
      :documentation 
-     #.(format nil "Return this help list~%"))))
-  
+     #.(format nil "Return this help description~%"))))
 
 (defvar *CLI-TO-VARIABLE-SPEC*
   ;; <KEYWORD> <REQUIRED> <ACTION> <SPECIAL-VAR>
   ;; <REQUIRED> is a boolean when t if keyword does not find a value signal an error.
+  ;; <ACTION> is symbol identifying a function to invoke with <SPECIAL-VAR> as
+  ;; its first arg and the value of the one associated <KEYWORD> in return value
+  ;; of clime:get-command-arguments as its second argument, e.g.:
+  ;;  (set-base-mount-parameter-namestring '*LOCAL-MOUNT-NAMESTRING* (assoc :LOCAL-MOUNT (get-command-arguments)))
+  ;; Each element of this list is processed by `clime:verify-local-mount-command-argument' in
+  ;; `clime:set-parameter-spec-with-command-arguments'.
+  ;; 
   ;; (setq *CLI-TO-VARIABLE-SPEC*
   '((:LOCAL-MOUNT  t set-base-mount-parameter-namestring             *LOCAL-MOUNT-NAMESTRING*)
     (:REMOTE-MOUNT t set-base-mount-parameter-namestring             *REMOTE-MOUNT-NAMESTRING*)
     (:LOCAL-SUB  nil set-base-mount-parameter-pathname-sub-component *LOCAL-DIRECTORY-SUB-COMPONENTS*)  
     (:REMOTE-SUB nil set-base-mount-parameter-pathname-sub-component *REMOTE-DIRECTORY-SUB-COMPONENTS*)
-    ;; (:HELP       nil show-clime-help)
-    ;; currently unimplemented
+    (:VALID-MIME nil set-valid-mime-types-from-command-args          *FILE-VALID-IMAGE-MIME-TYPES*)
+    ;;
+    ;; (:VALID-MIME nil 
+    ;;
+    ;;  <<<<CURRENTLY-NOT-UNIMPLEMENTED>>>>>
     ;; (:ARG-FILE nil set-arg-file-parameter                         *ARG-FILE-ARGUMENTS*)
+    ;;
+    ;; :NOTE We should never need to process :HELP as
+    ;; `clime:check-clime-help-argument' will have already bailed when *IS-BUILDAPP-P*
+    ;; (:HELP       nil show-clime-help) 
     ))
 
 ;;; ==============================
 ;; Elements of list are strings, either CL:PATHNAME-TYPES for a valid mime-type
 ;; or a mime-type as per or *nix `file` command or `libmagic`.
-(defparameter *FILE-VALID-IMAGE-MIME-TYPES* 
+(defparameter *FILE-VALID-IMAGE-MIME-TYPES*
+  ;;(setq *FILE-VALID-IMAGE-MIME-TYPES*
   (list "tiff" "tif" 
-        "jpeg" "jpg" ;; "pjpeg"
+        "jpeg" "jpg"                         ;; "pjpeg"
+        "bmp"  "x-bmp" "x-ms-bmp" "x-MS-bmp" ;; x-win-bitmap
+        "nef"  "x-nikon-nef"                 ;; x-niff -- Nikon
+        "dng"                                ;; x-adobe-dng -- Adobe
         "png" 
-        "svg"                               ;; svg+xml
-        "bmp" "x-bmp" "x-ms-bmp" "x-MS-bmp" ;; x-win-bitmap
-        "dng"                               ;; x-adobe-dng -- Adobe
-        "nef" "x-nikon-nef"                 ;; x-niff -- Nikon
+        "svg" ;; svg+xml
         ;; "psd" "x-psd"
         ;; "x-dcraw"
-        ;; "crw" "cr2" ;; x-canon-cr2 x-canon-crw -- Cannon 
+        ;; "crw" "cr2"                       ;; x-canon-cr2 x-canon-crw -- Cannon 
+        ;; "gif" 
         ))
 
 ;;; ==============================

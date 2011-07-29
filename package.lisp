@@ -49,7 +49,11 @@
              #:get-command-arguments                         ;; command-line-arguments:get-command-line-arguments  command-line-arguments:process-command-line-options
              #:verify-local-mount-command-argument
              #:set-parameter-spec-with-command-arguments
+             #:set-parameter-report
              #:split-subdir-paths                            ;; cl-ppcre:split
+             #:filter-valid-mime-types-command-args          ;; cl-ppcre:split
+             #:verify-valid-mime-types-command-args
+             #:set-valid-mime-types-from-command-args
              #:set-base-mount-parameter-pathname-component
              #:verify-mount-namestrings                      ;; sb-ext:native-namestring  sb-impl::native-file-kind  osicat:pathname-as-directory
              #:set-base-mount-parameter-namestring

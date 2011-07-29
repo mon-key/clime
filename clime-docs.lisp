@@ -65,11 +65,24 @@
         set-base-mount-parameter-pathname-sub-component <SPECIAL-SUB-COMP-PARAM> <SUBDIR-PATH-STRING>
          `-> split-subdir-paths <SUBDIR-PATH-STRING>
         | (set-base-mount-parameter-pathname-sub-component '*LOCAL-DIRECTORY-SUB-COMPONENTS*  "some/local-sub/dir")
-        | (set-base-mount-parameter-pathname-component     '*REMOTE-DIRECTORY-SUB-COMPONENTS* "some/remote-sub")
+        | (set-base-mount-parameter-pathname-sub-component '*REMOTE-DIRECTORY-SUB-COMPONENTS* "some/remote-sub")
         
          set-base-mount-parameter-pathname-sub-component set the value of
          <SPECIAL-PARAM> to a <SUBDIR-PATH-STRING> as recieved from the argv
          splitting <SUBDIR-PATH-STRING> into individual tokens it with split-subdir-paths
+
+     <<<<CURRENTLY-NOT-FULLY-IMPLEMENTED>>>> 
+  c) If :VALID-MIME was found as a command line argument check that it splits it into a list of strings
+     If so, set value of SPECIAL-PARAM to the list of strings returned after splitting VALID-MIME-STRING.
+     If :VALID-MIME was not a command line argument default is *FILE-VALID-IMAGE-MIME-TYPES*.
+      set-valid-mime-types-from-command-args <SPECIAL-PARAM> <VALID-MIME-STRING>
+       `-> verify-valid-mime-types-command-args <IF-ARG-ENSURED>
+            `-> filter-valid-mime-types-command-args <IF-ARG>
+       | (verify-valid-mime-types-command-args nil)             => *FILE-VALID-IMAGE-MIME-TYPES*
+       | (verify-valid-mime-types-command-args "tiff,tiff,bmp") => ("tiff" "bmp")
+       | (verify-valid-mime-types-command-args "")              => ;report and bail
+       | (verify-valid-mime-types-command-args ",")             => ;report and bail
+
 
  Following outlines the order functions are called when checking pathnames
  prior to binding their associated variables at runtime.
@@ -187,6 +200,19 @@
  
  verify-local-mount-command-argument
   - failed-function-report-and-bail
+
+ filter-valid-mime-types-command-args
+  - cl-ppcre:split
+
+ verify-valid-mime-types-command-args
+  - filter-valid-mime-types-command-args
+  - failed-function-report-and-bail
+
+ set-valid-mime-types-from-command-args
+  - verify-valid-mime-types-command-args
+
+ split-subdir-paths
+ - cl-ppcre:split
  
  set-parameter-spec-with-command-arguments
   - verify-local-mount-command-argument
@@ -369,6 +395,23 @@
 ;;     :ARG-FILE     [ <NAMESTRING> | nil ] )
 
 ;;; ==============================
+;; *CLI-TO-VARIABLE-SPEC*
+;; A list of lists each element having the form:
+;; <KEYWORD> <REQUIRED> <ACTION> <SPECIAL-VAR>
+;; Each element of this list is processed by `clime:verify-local-mount-command-argument' in
+;; `clime:set-parameter-spec-with-command-arguments'.
+;; <KEYWORD> is key into the reeturn value of `clime:get-command-arguments'.
+;; <REQUIRED> is a boolean. 
+;; When t if <KEYWORD> does not find value at runtime signal an error.
+;;
+;; <ACTION> is symbol identifying a function. 
+;; It is invoke with <SPECIAL-VAR> as its first arg and the value of the one
+;; associated <KEYWORD> in return value of clime:get-command-arguments as its
+;; second argument, e.g.:
+;;  (set-base-mount-parameter-namestring '*LOCAL-MOUNT-NAMESTRING* (assoc :LOCAL-MOUNT (get-command-arguments)))
+
+
+;;; ==============================
 ;; verify-local-remote-mountpoints
 ;; check that LOCAL-MOUNT and REMOTE-MOUNT are both mountpoint-p
 
@@ -383,6 +426,42 @@
 ;; (split-subdir-paths "/" "some-path")
 ;; (split-subdir-paths "/" "some/path/tosub")
 ;; (split-subdir-paths "/" "//some-path//" )
+
+;;; ==============================
+;; filter-valid-mime-types-command-args
+;; If IF-ARG is `cl:stringp' destructively modify its value by splitting on
+;; #\\, and whitespace boundaries as if by cl-ppcre:split with the :sharedp keyword T.
+;; Returned value is a either null or a list of strings filtered for empty
+;; strings and duplicates as if by `cl:delete-duplicates' and `cl:delete-if'.
+;; :EXAMPLE
+;;  (filter-valid-mime-types-command-args "tiff")
+;;  (filter-valid-mime-types-command-args "tiff,tif,bmp")
+;;  (filter-valid-mime-types-command-args "tiff, tif tiff  bmp  , bmp ")
+;;  (filter-valid-mime-types-command-args "")
+;;  (filter-valid-mime-types-command-args " ")
+;;  (filter-valid-mime-types-command-args ",")
+;;  (filter-valid-mime-types-command-args " , ")
+;;  (filter-valid-mime-types-command-args nil)
+;;  (filter-valid-mime-types-command-args '())
+
+
+;; set-valid-mime-types-from-command-args
+;; Set value of SPECIAL-PARAM to the list of strings returned after splitting VALID-MIME-STRING.
+;; :EXAMPLE
+;; (set-valid-mime-types-from-command-args '*FILE-VALID-IMAGE-MIME-TYPES* "tiff,tif,bmp")
+
+;;; ==============================
+;; verify-valid-mime-types-command-args
+;; If --valid-mime was passed on command line verify that IF-ARG-ENSURED splits to something
+;; reasonable with for use as value of `clime:*FILE-VALID-IMAGE-MIME-TYPES*'.
+;; If `clime:filter-valid-mime-types-command-args' returns a list of strings
+;; with IF-ARG-ENSURED as its argument return it, else and *IS-BUILDAPP-P* is
+;; non-nil signal an error and exit with status 1.
+;;
+;; KEYWORD stream is a stream to report to. Default is *standard-output*.
+;; We do not want to bind *FILE-VALID-IMAGE-MIME-TYPES* to the empty list should
+;; `clime:filter-valid-mime-types-command-args' return null
+;; *FILE-VALID-IMAGE-MIME-TYPES* 
 
 ;;; ==============================
 ;; parse-mountpoint-directory-components
