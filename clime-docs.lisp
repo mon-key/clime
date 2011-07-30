@@ -36,7 +36,7 @@
  The initial parsing and binding of command line arguments:
 
  Check if we found any help args in sb-ext:*posix-argv*
-  If so, print them and bail
+  If so, print the help docstring with show-clime-help and when *IS-BUILDAPP-P* exit.
  
  Else proceed w/ parsing the command line args:
  (set-parameter-spec-with-command-arguments (get-command-arguments) *CLI-TO-VARIABLE-SPEC*)
@@ -196,7 +196,7 @@
   - sb-ext:quit
 
  show-clime-help
- - command-line-arguments:show-option-help
+  - command-line-arguments:show-option-help
  
  verify-local-mount-command-argument
   - failed-function-report-and-bail
@@ -212,11 +212,15 @@
   - verify-valid-mime-types-command-args
 
  split-subdir-paths
- - cl-ppcre:split
+  - cl-ppcre:split
  
  set-parameter-spec-with-command-arguments
+  - get-command-arguments
+  - *CLI-TO-VARIABLE-SPEC*
   - verify-local-mount-command-argument
- 
+  - set-parameter-report
+  - set-local-directory-base-regexp-and-remote-namestring
+
  set-base-mount-parameter-pathname-component
   - split-subdir-paths
  
@@ -383,8 +387,15 @@
 ;;; ==============================
 ;; set-parameter-spec-with-command-arguments
 ;; Set values of PARAMTER-SPEC according to key/value pairs of COMMAND-ARGUMENTS
-;; :EXAMPLE
-;; (set-parameter-spec-with-command-arguments (get-command-arguments) *CLI-TO-VARIABLE-SPEC* :stream *standard-output*)
+;; Keyword COMMAND-ARGUMENTS is as per return value of `clime:get-command-arguments'
+;; Keyword PARAMETER-SPEC is as per `clime:*CLI-TO-VARIABLE-SPEC*', the default when ommitted.
+;; PARAMETER-SPEC is a list of lists each element of the form:
+;;  <KEYWORD> <REQUIRED> <ACTION> <SPECIAL-VAR>
+;; Following two forms are functionaly equivalent:
+;; (set-parameter-spec-with-command-arguments)
+;; (set-parameter-spec-with-command-arguments (get-command-arguments :stream *standard-output*) 
+;;                                            *CLI-TO-VARIABLE-SPEC* 
+;;                                            :stream *standard-output*)
 
 ;;; ==============================
 ;; get-command-arguments
@@ -736,11 +747,7 @@
  sb-ext:*posix-argv*
  sb-ext:quit
  sb-ext:run-program
- sb-ext:native-namestring
  sb-ext:process-exit-code
- sb-ext:native-namestring
- sb-ext:parse-native-namestring
- sb-impl::native-file-kind
 
 |#
 

@@ -15,7 +15,7 @@
 (defun get-command-arguments (&key (stream *standard-output*))
   (check-clime-help-argument :stream stream)
   (command-line-arguments:process-command-line-options
-   *CLI-SPECIFICATION* 
+   *CLI-SPECIFICATION*
    (command-line-arguments:get-command-line-arguments)))
 
 (defun check-clime-help-argument (&key (stream *standard-output*))
@@ -326,29 +326,30 @@
            (failed-function-report-and-bail "verify-local-mount-command-argument" :stream stream :exit-status 1)
            (return-from verify-local-mount-command-argument nil))))))
 
-(defun set-parameter-spec-with-command-arguments (command-arguments parameter-spec &key (stream *standard-output*))
-  ;; Parameter spec is as per *CLI-TO-VARIABLE-SPEC* --  a list of list each element of the form:
+(defun set-parameter-spec-with-command-arguments (&key command-arguments
+                                                       (parameter-spec *CLI-TO-VARIABLE-SPEC*)
+                                                       (stream *standard-output*)
+                                                  &aux (cmd-args (or command-arguments 
+                                                                     (get-command-arguments :stream stream))))
+  ;; PARAMETER-SPEC is as per `clime:*CLI-TO-VARIABLE-SPEC*'.
+  ;; It is a list of list each element of the form:
   ;; <KEYWORD> <REQUIRED> <ACTION> <SPECIAL-VAR>
   (loop 
-     ;;  arglist is the output of (get-command-arguments) -- a list of key/value pairs 
-     with arglist = command-arguments 
+     with arglist = cmd-args
      for (key req action param) in parameter-spec 
      for get-arg = (verify-local-mount-command-argument key arglist :required req :stream stream)
      do (funcall action param get-arg)
-     ;; (format stream "with command arg ~(`~A'~) setting variable ~A ~%~T now bound to: ~S~%" 
-     ;;       (string key) param (symbol-value param))
      (set-parameter-report param :command-key key :stream stream))
   ;; :NOTE These should already have been set in `clime:set-base-mount-parameter-namestring'
   (unless *LOCAL-DIRECTORY-COMPONENT*
     (set-base-mount-parameter-pathname-component '*LOCAL-DIRECTORY-COMPONENT*  '*LOCAL-MOUNT-NAMESTRING*  :stream stream))
   (unless *REMOTE-DIRECTORY-COMPONENT*
     (set-base-mount-parameter-pathname-component '*REMOTE-DIRECTORY-COMPONENT* '*REMOTE-MOUNT-NAMESTRING* :stream stream))
-
+  ;;
   (set-local-directory-base-regexp-and-remote-namestring
    '*LOCAL-DIRECTORY-BASE-REGEXP*      '*LOCAL-DIRECTORY-COMPONENT*  '*LOCAL-DIRECTORY-SUB-COMPONENTS*
    '*REMOTE-DIRECTORY-BASE-NAMESTRING* '*REMOTE-DIRECTORY-COMPONENT* '*REMOTE-DIRECTORY-SUB-COMPONENTS*
    :stream stream)
-
   (if *IS-BUILDAPP-P*
       (values)
       (loop for sym in (list '*LOCAL-MOUNT-NAMESTRING*
@@ -368,12 +369,15 @@
 ;;; ==============================
 (defun clime-main (argv &key (stream *standard-output*))
   (declare (ignore argv))
-  ;; No. Do this from buildapp with --eval (setq clime:*IS-BUILDAPP-P* t)
-  ;; (setq clime:*IS-BUILDAPP-P* t) 
-  (set-parameter-spec-with-command-arguments (get-command-arguments :stream stream) 
-                                             *CLI-TO-VARIABLE-SPEC* 
-                                             :stream *standard-output*)
+  ;;
+  ;; Following is the explicit call:
+  ;; (set-parameter-spec-with-command-arguments (get-command-arguments :stream stream) 
+  ;;                                            *CLI-TO-VARIABLE-SPEC* 
+  ;;                                            :stream *standard-output*)
+  (set-parameter-spec-with-command-arguments)
+  ;;
   ;; ( ... do more clime stuff here ... )
+  ;;
   )
 
 

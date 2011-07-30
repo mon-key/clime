@@ -49,7 +49,8 @@
      ("valid-mime" 
       :type string 
       :documentation #.(format nil "<<<<CURRENTLY-NOT-IMPLEMENTED>>>> ~
-                                    A list of valid image mime types to identify.~
+                                    A string of comma delimited image mime-types to identify.~
+                                    Args should be of the form: \"tiff,tif,bmp\" ~
                                     Default is value of `clime:*FILE-VALID-IMAGE-MIME-TYPES*'~%"))
     ("arg-file"
      :type string
