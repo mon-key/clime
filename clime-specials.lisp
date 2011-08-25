@@ -15,7 +15,9 @@
 ;; This what we want when using the system in buildapp'd configuration.
 (defvar *IS-BUILDAPP-P* nil)
 
-(defparameter *FILE-MIME-TABLE* (make-hash-table :test 'equal))
+(defparameter *FILE-MIME-TABLE*
+  #-sbcl (make-hash-table :test 'equal)
+  #+sbcl (make-hash-table :test 'equal :synchronized t))
 
 ;; (command-line-arguments:show-option-help *CLI-SPECIFICATION*)
 (defparameter *CLI-SPECIFICATION*
@@ -103,11 +105,44 @@
         "dng"                                ;; x-adobe-dng -- Adobe
         "png" 
         "svg" ;; svg+xml
-        ;; "psd" "x-psd"
+        "psd" "x-psd"
         ;; "x-dcraw"
         ;; "crw" "cr2"                       ;; x-canon-cr2 x-canon-crw -- Cannon 
         ;; "gif" 
         ))
+
+(defparameter *psd-scanner* 
+  (cl-ppcre:create-scanner "^/.*\.\(psd\|PSD\)$"))
+
+(defparameter *jpg-scanner* 
+  (cl-ppcre:create-scanner "^/.*\.\(jp[e]?g\|JPG\)$"))
+
+(defparameter *bmp-scanner* 
+  (cl-ppcre:create-scanner "^/.*\.\(bmp\|BMP\)$"))
+
+(defparameter *bmp-gz-scanner* 
+  (cl-ppcre:create-scanner "^/.*\.\(bmp\.gz\)$"))
+
+(defparameter *nef-scanner* 
+  (cl-ppcre:create-scanner "^/.*\.\(nef\|NEF\)$"))
+
+(defparameter *tiff-scanner*
+  (cl-ppcre:create-scanner "^/.*\.\(tiff?\|TIFF\)$"))
+
+(defparameter *bmps-hash*   (make-hash-table :test #'equal))
+
+(defparameter *bmp-gz-hash* (make-hash-table :test #'equal))
+
+(defparameter *nefs-hash*   (make-hash-table :test #'equal))
+
+(defparameter *jpegs-hash*  (make-hash-table :test #'equal))
+
+(defparameter *tiff-hash*   (make-hash-table :test #'equal))
+
+(defparameter *psd-hash*    (make-hash-table :test #'equal))
+
+(defparameter *others-hash* (make-hash-table :test #'equal))
+
 
 ;;; ==============================
 ;; If we decide to do any additional image frobbing (e.g. using convert, exiftool, bmp2tiff etc.) 

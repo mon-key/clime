@@ -30,7 +30,7 @@
 (defun filter-files-for-image-mime-type (image-file-list &key substitution-fun
                                                               (check-compress nil) 
                                                               (valid-mime-types *FILE-VALID-IMAGE-MIME-TYPES*)
-                                                              (file-hashtable *FILE-MIME-TABLE*)                                         
+                                                              (file-hashtable *FILE-MIME-TABLE*)
                                                               (stream *standard-output*))
   ;; (declare (special *FILE-VALID-IMAGE-MIME-TYPES*))
   ;; :NOTE The use of CL:LET* will force an immediate exit via GATHER-NATIVE-FILES-IF when *IS-BUILDAPP-P*
@@ -79,11 +79,17 @@
                  (and splits
                       (image-check  splits)
                       (binary-check splits)
-                      t))))
-      ;;
+                      t)))
+             ;; (sb-ext:with-locked-hash-table *FILE-MIME-TABLE*
+             (set-hash (get-val set-val) ;; (get-val table set-val)
+               ;; (declare (hash-table table))
+               #-sbcl (setf (gethash get-val file-hashatble) set-val)
+               #+sbcl (if (sb-ext:hash-table-synchronized-p file-hashtable)
+                          (sb-ext:with-locked-hash-table (file-hashtable)
+                            (setf (gethash get-val file-hashtable) set-val))
+                          (setf (gethash get-val file-hashtable) set-val))))
       ;; filter files in open-magic-list for files with mime-type matching:
       ;;  "image/<SOME-IMAGE-TYPE>; charset=binary"
-      ;;
       (magicffi:with-open-magic (chk-mgc open-magic-list)
         (magicffi:magic-load chk-mgc)
         (loop 
@@ -91,10 +97,13 @@
            for get-magic      = (magicffi:magic-file chk-mgc file-magic)
            for is-valid-magic = (image-and-binary-p get-magic)
            if is-valid-magic 
-            do (setf (gethash file-magic file-hashtable) t)
+           ;; do (setf (gethash file-magic file-hashtable) t)
+           do (set-hash file-magic t)
            else
-            do (setf (gethash file-magic file-hashtable) get-magic)
-           finally (return (report-if-invalid-mime file-hashtable :stream stream))))))
+           ;; do (setf (gethash file-magic file-hashtable) get-magic)
+           do (set-hash file-magic get-magic)
+           finally (return (report-if-invalid-mime file-hashtable :stream stream))))
+      ))
   (when (and substitution-fun (functionp substitution-fun))
     (map-hashtable-base-remote-paths file-hashtable substitution-fun)))
     
@@ -105,9 +114,13 @@
              (unless (eq val t)
                (push (list key val) gthr-invalid)
                (remhash key hashtable))))
-      (maphash #'chk-invalid hashtable))
+      #-sbcl (maphash #'chk-invalid hashtable)
+      #+sbcl (if (sb-ext:hash-table-synchronized-p hashtable)
+                 (sb-ext:with-locked-hash-table (hashtable)
+                   (maphash #'chk-invalid hashtable))
+                 (maphash #'chk-invalid hashtable)))
     (when gthr-invalid
-      (format stream "~%Filtered namestrings with non-valid image mime-types:~%")
+      (format stream "~&~%Filtered namestrings with non-valid image mime-types:~%")
       (format stream "~{~{~2T:FILE ~A~%~2T:MIME ~A~%~}~^~%~}" gthr-invalid))
     hashtable))
 
@@ -120,14 +133,23 @@
                    (setf (gethash key hashtable) rep-if)
                    ;; :TODO should report this
                    (remhash key hashtable))))))
-    (maphash #'do-sub hashtable)
-    hashtable))
+    #-sbcl (maphash #'do-sub hashtable)
+    #+sbcl (if (sb-ext:hash-table-synchronized-p hashtable)
+               (sb-ext:with-locked-hash-table (hashtable)
+                 (maphash #'do-sub hashtable))
+               (maphash #'do-sub hashtable)))
+  hashtable)
 
-
-;; :NOTE What about `cl:enough-namestring'?
-(defun substitute-local-remote-base-paths  (base-path-regexp target-namestring base-remote-namestring)
+;; :NOTE What about `cl:enough-namestring'? 
+;; Maybe not such a good idea where *REMOTE-DIRECTORY-BASE-NAMESTRING* is not localhost...
+(defun substitute-local-remote-base-paths (base-path-regexp target-namestring base-remote-namestring)
   ;; *LOCAL-DIRECTORY-BASE-REGEXP* *REMOTE-DIRECTORY-BASE-NAMESTRING*
   (cl-ppcre:regex-replace base-path-regexp target-namestring base-remote-namestring))
+
+(defun default-substitute-local-remote-base-paths (target)
+  (substitute-local-remote-base-paths *LOCAL-DIRECTORY-BASE-REGEXP*
+                                      target
+                                      *REMOTE-DIRECTORY-BASE-NAMESTRING*))
 
 ;; :TODO in an ideal world this would also check for `cl:wild-pathname-p'.
 (defun pathnames-normalize-native (file-list &key (stream *standard-output*))
@@ -156,6 +178,23 @@
 ;;;  Using osicat:with-directory-iterator/osicat:mapdir instead
 ;;; ==============================
 ;;
+
+
+;; (loop 
+;;    for path in (osicat:list-directory #P"/some/path/foo/")
+;;    collect (multiple-value-list (clime-symlink-detector kind)))
+
+
+(defun clime-symlink-detector (path)
+  (let ((kind (osicat:file-kind path :follow-symlinks nil)))
+    (case (osicat:file-kind path :follow-symlinks nil)
+      (:regular-file (values path kind))
+      (:directory (if (equal (truename path) path)
+                      (values path kind)
+                      (values :symbolic-link path)))
+      ((:symbolic-link :pipe :socket :character-device :block-device)
+       (values kind path)))))
+
 (defun initial-partition-dirs-from-files (file-list)
   (let ((nativize (pathnames-normalize-native file-list))
         (gthr-dir-kind     '())
@@ -184,17 +223,21 @@
 (defun gather-native-files-if (file-list &key (stream *standard-output*))
   (let ((gather-results '()))
     (labels ((is-regular-file-p (putative-file)
-               ;; osicat-sys:native-namestring
+               ;; osicat-sys:native-namestring 
                (let ((gone-native (sb-ext:native-namestring putative-file)))
-                 (and gone-native
-                      ;; (osicat:file-kind gone-native :follow-symlinks)
-                      (eq (sb-impl::native-file-kind gone-native) :file)
-                      gone-native))))
+                 ;; The only reason i can remember for why we use cl:and here is because
+                 ;; unlike osicat:file-kind sb-impl::native-file-kind wants its
+                 ;; arg as a native-namestring not a pathname
+                 (and gone-native       
+                      ;; (eq (sb-impl::native-file-kind gone-native) :file)
+                      (eq (osicat:file-kind  gone-native :follow-symlinks nil) :regular-file)
+                      gone-native)                 
+                 )))
       (loop 
          for maybe-file in file-list
          for is-regular = (is-regular-file-p maybe-file)
          if is-regular collect is-regular into ok-file
-          else
+         else
          collect maybe-file into not-file
          finally (return (setf gather-results (list ok-file not-file)))))
     (when (cadr gather-results)
@@ -208,6 +251,7 @@
           (failed-function-report-and-bail "gather-native-files-if"
                                            :stream stream 
                                            :exit-status 0)))))
+
 
 ;;; ==============================
 

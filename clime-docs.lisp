@@ -648,6 +648,12 @@
 ;;     (map-hashtable-base-remote-paths *FILE-MIME-TABLE* #'rplc)))
 
 ;;; ==============================
+;; default-substitute-local-remote-base-paths
+;; Default function for performing local->remote pathname substitutions for
+;; files in in hashtable *FILE-MIME-TABLE*.
+;; TARGET is a namestring.
+
+;;; ==============================
 ;; gather-native-files-if
 ;; Return a native-namestring for each pathname in file-list that is a regular file
 ;; :EXAMPLE
@@ -782,6 +788,8 @@
  magicffi:+MAGIC-SYMLINK+
 
 |#
+
+
 
 ;;; ==============================
 

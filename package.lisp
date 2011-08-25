@@ -18,6 +18,21 @@
              #:*FILE-MIME-TABLE*
              #:*FILE-VALID-IMAGE-MIME-TYPES* 
              ;;
+             #:*PSD-SCANNER* 
+             #:*JPG-SCANNER* 
+             #:*BMP-SCANNER* 
+             #:*BMP-GZ-SCANNER* 
+             #:*NEF-SCANNER* 
+             #:*TIFF-SCANNER*
+             ;;
+             #:*BMPS-HASH*  
+             #:*BMP-GZ-HASH*
+             #:*NEFS-HASH*  
+             #:*JPEGS-HASH* 
+             #:*TIFF-HASH*  
+             #:*PSD-HASH*   
+             #:*OTHERS-HASH*
+             ;;
              #:*LOCAL-MOUNT-NAMESTRING*
              #:*LOCAL-DIRECTORY-COMPONENT*
              #:*LOCAL-DIRECTORY-SUB-COMPONENTS*
@@ -73,6 +88,7 @@
              #:filter-files-for-image-mime-type              ;; cl-ppcre:create-scanner cl-ppcre:split magicffi:with-open-magic magicffi:magic-file
              #:report-if-invalid-mime
              #:map-hashtable-base-remote-paths
+             #:default-substitute-local-remote-base-paths
              ;; 
              ;; Following are likely deprecated:
              ;; #:initial-partition-dirs-from-files          ;; osicat:pathname-as-directory
