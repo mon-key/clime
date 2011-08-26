@@ -111,51 +111,6 @@
         ;; "gif" 
         ))
 
-(defparameter *psd-scanner* 
-  (cl-ppcre:create-scanner "^/.*\\.(psd|PSD)$"))
-
-(defparameter *jpg-scanner* 
-  (cl-ppcre:create-scanner "^/.*\\.(jpe?g|JPE?G)$"))
-
-(defparameter *jpg-gz-scanner* 
-  (cl-ppcre:create-scanner "^/.*\\.(jpe?g\\.gz)$"))
-
-(defparameter *bmp-scanner* 
-  (cl-ppcre:create-scanner "^/.*\\.(bmp|BMP)$"))
-
-(defparameter *bmp-gz-scanner* 
-  (cl-ppcre:create-scanner "^/.*\\.(bmp\\.gz)$"))
-
-(defparameter *nef-scanner* 
-  (cl-ppcre:create-scanner "^/.*\\.(nef|NEF)$"))
-
-(defparameter *tiff-scanner*
-  (cl-ppcre:create-scanner "^/.*\\.(tiff?|TIFF)$"))
-
-;; Matches bmp.gz jpg.gz jpeg.gz
-;; :EXAMPLE
-;; (cl-ppcre:register-groups-bind (a b c) (*extension-gz-scanner* "bmp.gz")
-;;  (list a b c))
-(defparameter *extension-gz-scanner*
-  (cl-ppcre:create-scanner "^(.{3,4})(\\.)(gz)$"))
-
-(defparameter *bmp-hash*    (make-hash-table :test #'equal))
-
-(defparameter *bmp-gz-hash* (make-hash-table :test #'equal))
-
-(defparameter *nef-hash*    (make-hash-table :test #'equal))
-
-(defparameter *jpg-hash*    (make-hash-table :test #'equal))
-
-(defparameter *jpg-gz-hash* (make-hash-table :test #'equal))
-
-(defparameter *tiff-hash*   (make-hash-table :test #'equal))
-
-(defparameter *psd-hash*    (make-hash-table :test #'equal))
-
-(defparameter *other-hash*  (make-hash-table :test #'equal))
-
-
 ;;; ==============================
 ;; If we decide to do any additional image frobbing (e.g. using convert, exiftool, bmp2tiff etc.) 
 ;; Add a containter for each external program's pathname used by clime. There is

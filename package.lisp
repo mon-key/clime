@@ -18,22 +18,6 @@
              #:*FILE-MIME-TABLE*
              #:*FILE-VALID-IMAGE-MIME-TYPES* 
              ;;
-             #:*PSD-SCANNER* 
-             #:*JPG-GZ-SCANNER* 
-             #:*JPG-SCANNER* 
-             #:*BMP-SCANNER* 
-             #:*BMP-GZ-SCANNER* 
-             #:*NEF-SCANNER* 
-             #:*TIFF-SCANNER*
-             ;;
-             #:*BMP-HASH*  
-             #:*BMP-GZ-HASH*
-             #:*NEF-HASH*  
-             #:*JPG-HASH* 
-             #:*JPG-GZ-SCANNER* 
-             #:*TIFF-HASH*  
-             #:*PSD-HASH*   
-             #:*OTHER-HASH*
              ;;
              #:*LOCAL-MOUNT-NAMESTRING*
              #:*LOCAL-DIRECTORY-COMPONENT*

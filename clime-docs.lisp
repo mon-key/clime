@@ -743,6 +743,14 @@
 ;; | 
 ;; `---- :SOURCE (URL `http://libopenraw.freedesktop.org/wiki/Nikon_NEF')
 ;; :SEE (URL `https://bugs.launchpad.net/ubuntu/+source/shared-mime-info/+bug/93026')
+
+
+
+;; #:%absolute-existent-file-or-directory
+;; #:%ensure-simple-namestring
+;; #:%walk-directory-filter-ignorables
+;; #:%partition-walked-files
+
 ;;; ==============================
 
 
